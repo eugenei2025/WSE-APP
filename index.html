@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WSE Director Responsibilities</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        /* Header */
+        .header { background: white; border-radius: 10px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; }
+        .header h1 { font-size: 24px; color: #1e293b; margin-bottom: 4px; }
+        .header p { color: #64748b; font-size: 14px; }
+        .header-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: #1e40af; color: white; }
+        .btn-primary:hover { background: #1e3a8a; }
+        .btn-secondary { background: #475569; color: white; }
+        .btn-secondary:hover { background: #334155; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-outline { background: white; color: #475569; border: 1px solid #cbd5e1; }
+        .btn-outline:hover { background: #f8fafc; }
+        .btn-small { padding: 6px 12px; font-size: 12px; }
+        
+        /* Status indicator */
+        .save-status { font-size: 12px; color: #22c55e; display: flex; align-items: center; gap: 4px; margin-top: 8px; }
+        .save-status svg { width: 14px; height: 14px; }
+        
+        /* Legend */
+        .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .legend-item { padding: 16px; border-radius: 8px; text-align: center; }
+        .legend-dsc { background: #eff6ff; border-left: 4px solid #2563eb; }
+        .legend-dsc .title { font-weight: 600; color: #1e40af; font-size: 14px; }
+        .legend-dsc .subtitle { font-size: 11px; color: #3b82f6; }
+        .legend-doo { background: #ecfdf5; border-left: 4px solid #059669; }
+        .legend-doo .title { font-weight: 600; color: #065f46; font-size: 14px; }
+        .legend-doo .subtitle { font-size: 11px; color: #10b981; }
+        
+        /* Table */
+        .table-container { background: white; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        
+        /* Table Header */
+        .table-header { display: grid; grid-template-columns: 180px 1fr 180px 1fr 40px; background: #1e293b; color: white; font-size: 12px; font-weight: 600; }
+        .table-header > div { padding: 12px 16px; }
+        .table-header .dsc-header { background: #1e40af; }
+        .table-header .doo-header { background: #047857; }
+        .header-subtitle { font-weight: 400; font-size: 10px; opacity: 0.8; display: block; margin-top: 2px; }
+        
+        .row { border-bottom: 1px solid #e2e8f0; }
+        .row:last-child { border-bottom: none; }
+        .row-main { display: grid; grid-template-columns: 180px 1fr 180px 1fr 40px; min-height: 80px; }
+        
+        .cell { padding: 12px 16px; position: relative; display: flex; flex-direction: column; }
+        .cell-dsc-area { background: #eff6ff; border-right: 1px solid #e2e8f0; }
+        .cell-dsc { background: rgba(239, 246, 255, 0.3); border-right: 1px solid #e2e8f0; }
+        .cell-doo-area { background: #ecfdf5; border-right: 1px solid #e2e8f0; }
+        .cell-doo { background: rgba(236, 253, 245, 0.3); border-right: 1px solid #e2e8f0; }
+        .cell-actions { background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 12px; gap: 8px; }
+        
+        .area-name { font-weight: 600; font-size: 13px; color: #1e293b; line-height: 1.4; }
+        .cell-dsc-area .area-name { color: #1e40af; }
+        .cell-doo-area .area-name { color: #065f46; }
+        
+        .responsibility-text { font-size: 13px; color: #475569; line-height: 1.6; }
+        
+        .edit-trigger { display: none; margin-top: auto; padding-top: 8px; font-size: 11px; color: #3b82f6; cursor: pointer; align-items: center; gap: 4px; }
+        .cell:hover .edit-trigger { display: inline-flex; }
+        .cell-doo .edit-trigger, .cell-doo-area .edit-trigger { color: #059669; }
+        
+        .action-btn { background: none; border: none; cursor: pointer; padding: 6px; color: #94a3b8; border-radius: 4px; transition: all 0.2s; }
+        .action-btn:hover { background: #e2e8f0; color: #475569; }
+        .action-btn.expand:hover { color: #3b82f6; }
+        .action-btn.delete:hover { color: #dc2626; background: #fee2e2; }
+        
+        /* Tasks Section */
+        .tasks-section { display: none; grid-template-columns: 180px 1fr 180px 1fr 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+        .tasks-section.visible { display: grid; }
+        .tasks-label { padding: 12px 16px; font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; border-right: 1px solid #e2e8f0; }
+        .tasks-label.dsc { background: rgba(239, 246, 255, 0.5); }
+        .tasks-label.doo { background: rgba(236, 253, 245, 0.5); }
+        .tasks-column { padding: 12px 16px; border-right: 1px solid #e2e8f0; }
+        .tasks-column:last-child { border-right: none; }
+        .tasks-spacer { background: #f1f5f9; }
+        
+        .task-item { display: flex; align-items: flex-start; gap: 8px; background: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
+        .task-bullet { flex-shrink: 0; margin-top: 2px; font-weight: bold; }
+        .task-bullet.dsc { color: #2563eb; }
+        .task-bullet.doo { color: #059669; }
+        .task-text { flex: 1; font-size: 12px; color: #475569; }
+        .task-delete { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 2px; opacity: 0; transition: opacity 0.2s; }
+        .task-item:hover .task-delete { opacity: 1; }
+        .task-delete:hover { color: #dc2626; }
+        
+        .add-task { display: flex; gap: 8px; margin-top: 8px; }
+        .add-task input { flex: 1; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; }
+        .add-task input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .add-task-btn { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .add-task-btn.dsc { background: #dbeafe; color: #1e40af; }
+        .add-task-btn.dsc:hover { background: #bfdbfe; }
+        .add-task-btn.doo { background: #d1fae5; color: #065f46; }
+        .add-task-btn.doo:hover { background: #a7f3d0; }
+        
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.visible { display: flex; }
+        .modal { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
+        .modal h3 { font-size: 18px; color: #1e293b; margin-bottom: 20px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group.full { grid-column: span 2; }
+        .form-group label { display: block; font-size: 13px; font-weight: 500; color: #475569; margin-bottom: 6px; }
+        .form-group label.dsc { color: #1e40af; }
+        .form-group label.doo { color: #065f46; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-family: inherit; }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+        .section-divider { border-top: 2px solid #e2e8f0; margin: 20px 0; padding-top: 16px; }
+        .section-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+        .section-title.dsc { color: #1e40af; }
+        .section-title.doo { color: #065f46; }
+        
+        /* Inline Edit */
+        .inline-edit { display: none; }
+        .inline-edit.visible { display: block; }
+        .inline-edit textarea, .inline-edit input { width: 100%; padding: 8px; border: 1px solid #3b82f6; border-radius: 6px; font-size: 13px; font-family: inherit; }
+        .inline-edit textarea { min-height: 80px; resize: vertical; }
+        .inline-edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .inline-edit-actions button { padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; border: none; }
+        .save-btn { background: #22c55e; color: white; }
+        .save-btn:hover { background: #16a34a; }
+        .cancel-btn { background: #e2e8f0; color: #475569; }
+        .cancel-btn:hover { background: #cbd5e1; }
+        
+        /* Footer */
+        .footer { text-align: center; padding: 16px; color: #94a3b8; font-size: 13px; }
+        
+        @media (max-width: 1100px) {
+            .table-header, .row-main, .tasks-section { grid-template-columns: 1fr; }
+            .legend { grid-template-columns: 1fr; }
+            .cell { border-right: none !important; border-bottom: 1px solid #e2e8f0; }
+            .cell-actions { flex-direction: row; justify-content: center; padding: 12px; }
+            .tasks-label, .tasks-column { border-right: none !important; border-bottom: 1px solid #e2e8f0; }
+            .form-row { grid-template-columns: 1fr; }
+            .form-group.full { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>WSE Director Responsibilities</h1>
+                <p>Manage responsibilities and tasks for WorldSkills Europe Director roles</p>
+                <div class="save-status" id="save-status">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    <span>Changes saved automatically</span>
+                </div>
+            </div>
+            <div class="header-buttons">
+                <button class="btn btn-outline" onclick="exportJSON()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Export Data
+                </button>
+                <button class="btn btn-outline" onclick="document.getElementById('import-file').click()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Import Data
+                </button>
+                <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)">
+                <button class="btn btn-outline" onclick="resetToDefault()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                    Reset
+                </button>
+                <button class="btn btn-secondary" onclick="openAddModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Add Row
+                </button>
+                <button class="btn btn-primary" onclick="exportToPDF()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Export PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item legend-dsc">
+                <div class="title">Director of Skills Competitions</div>
+                <div class="subtitle">Quality, Governance & Experts</div>
+            </div>
+            <div class="legend-item legend-doo">
+                <div class="title">Director of Operations</div>
+                <div class="subtitle">Host Advisory, Infrastructure & Logistics</div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <div class="table-header">
+                <div class="dsc-header">DSC Key Area<span class="header-subtitle">Skills Competitions</span></div>
+                <div class="dsc-header">Responsibility</div>
+                <div class="doo-header">DOO Key Area<span class="header-subtitle">Operations</span></div>
+                <div class="doo-header">Responsibility</div>
+                <div></div>
+            </div>
+            <div id="responsibilities-table"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Click expand (▶) to add specific tasks • Hover over any text to edit • Changes save automatically
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h3 id="modal-title">Add New Responsibility Row</h3>
+            
+            <div class="section-title dsc">Director of Skills Competitions</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="dsc">Key Area Title</label>
+                    <input type="text" id="dsc-area-input" placeholder="e.g., Expert Management">
+                </div>
+                <div class="form-group">
+                    <label class="dsc">Responsibility</label>
+                    <textarea id="dsc-input" placeholder="High-level responsibility..."></textarea>
+                </div>
+            </div>
+            
+            <div class="section-divider"></div>
+            
+            <div class="section-title doo">Director of Operations</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="doo">Key Area Title</label>
+                    <input type="text" id="doo-area-input" placeholder="e.g., Logistics Support">
+                </div>
+                <div class="form-group">
+                    <label class="doo">Responsibility</label>
+                    <textarea id="doo-input" placeholder="High-level responsibility..."></textarea>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="modal-save-btn" onclick="saveRow()">Add Row</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'wse-responsibilities-v3';
+        
+        // Default data from updated PDF
+        const defaultData = [
+            {
+                id: 1,
+                dscArea: "Primary Goal",
+                dsc: "Ensure the competitions operate smoothly, fairly, to the Skill Specific and competition rules and to a high technical and real-world standards.",
+                dscTasks: [],
+                dooArea: "Primary Goal",
+                doo: "Ensure the Host Organization practically delivers the necessary resources, venue, and logistics. Where the host is unable to comply fully understand the associated risk and ensure they have mitigated against them should they occur.",
+                dooTasks: []
+            },
+            {
+                id: 2,
+                dscArea: "Expert & Official Management",
+                dsc: "Critical Responsibility: Ensure every Official Skill has a nominated Chief Expert (CE) and Deputy Chief Expert (DCE) in place well in advance of the EuroSkills event, as skills cannot operate without them. Approve final CE/DCE nominations after elections. Manage replacements and continuity if a CE or DCE steps down or withdraws. Oversee the recruitment and management of Jury Presidents and Jury President Team Leaders. Ensure those CE and DCE not performing are reported to their Technical Delegates and if necessary recommend to them that they are stood down.",
+                dscTasks: [],
+                dooArea: "Packages & Official Logistics",
+                doo: "Logistical Support: Advise the Host on the accreditation and package requirements for all competition delegates. Ensure the Host's accreditation system correctly categorizes Experts and Officials for access control. Advise on accommodation allocation to ensure Experts and competitors are housed appropriately (often separate from Competitors).",
+                dooTasks: []
+            },
+            {
+                id: 3,
+                dscArea: "Technical Standards & Quality",
+                dsc: "Standard Setting: Oversee the Technical Descriptions (TD), the Standards Assessment Guides (SAG) and ensure they are updated and \"locked\" at the Skills Development Workshop (SDW). Oversee the Test Project development and validation process to ensure high-quality assessment tasks. Ensure accurate Results Processing and maintain the integrity of the marking system (CIS).",
+                dscTasks: [],
+                dooArea: "Resource Delivery & Infrastructure",
+                doo: "Resource Delivery: Guide the Host on the Infrastructure List (IL) acquisition process, ensuring the right equipment is sourced. Manage the \"WSE IL System\" tracking to ensure all requested items are physically accounted for. Validate that the \"Competitor Toolboxes\" logistics (shipping, customs, electrical testing) are managed correctly by the Host.",
+                dooTasks: []
+            },
+            {
+                id: 4,
+                dscArea: "Competition Committee & Governance",
+                dsc: "Committee Liaison: Work directly with the Chair and Vice Chair of the CC on technical and operational matters. Lead Statutory Meetings Competition Committee meetings. Enforce Competition Rules and manage the \"Issue and Dispute Resolution\" process. Governance: Update the competition Rules inline with the requirements of the Chair & Vice Chair of the competitions Committee. Manage all competition Rules requests for exceptions.",
+                dscTasks: [],
+                dooArea: "Host Organisation Liaison",
+                doo: "Host Liaison: Act as the primary operational link between WSE and the Host Organization (HO). Ensure the Host complies with the Hosting Agreement regarding logistical deliverables. Advise on the Accreditation Packages pricing and inclusions for Members.",
+                dooTasks: []
+            },
+            {
+                id: 5,
+                dscArea: "Event Content & Agenda",
+                dsc: "Content & Agenda: Define the technical agenda for the Competition Working Groups, Skills Development Workshops and Competition Preparation Meetings (CPM). Run the necessary briefings regarding competition rules with appointed Workshop Managers in cooperation with the host.",
+                dscTasks: [],
+                dooArea: "Meeting Logistics & Venues",
+                doo: "Logistics & Venues: Ensure the Host provides suitable meeting rooms, plenary halls, IT, WIFI networks and AV setups for CPMs and CC meetings. Manage the operational schedule for these meetings (room capacity, catering, access).",
+                dooTasks: []
+            },
+            {
+                id: 6,
+                dscArea: "Workshop Technical Environment",
+                dsc: "Operational Environment: Approve the final workshop layouts to ensure they meet technical assessment needs (e.g., \"fairness\" of layout). Monitor Health, Safety & Environment (HSE) compliance within the skills environment.",
+                dscTasks: [],
+                dooArea: "Venue Build & Facilities",
+                doo: "Build & Facilities: Oversee the Build/Dismantle Plan, ensuring the Host gives access to workshops on time. Advise on venue utilities (power, compressed air, waste management) and general cleanliness. Manage the \"Warehousing Approach\" (onsite vs. offsite) and logistics flow.",
+                dooTasks: []
+            },
+            {
+                id: 7,
+                dscArea: "Participant Welfare & Ethics",
+                dsc: "Participant Welfare: Ensure the competition schedule allows for proper breaks and competitor welfare. Oversee the \"Code of Ethics\" regarding competitor fairness.",
+                dscTasks: [],
+                dooArea: "Delegate Services Delivery",
+                doo: "Practical Delivery: Accommodation - Advise on hotel selection, grading, and capacity planning for all delegates. Transport - Validate the Host's transport master plan (airport arrivals, daily shuttle buses). Catering - Ensure adequate lunch systems (buffet vs. packed) and dietary requirement management (allergies, Halal, etc.).",
+                dooTasks: []
+            },
+            {
+                id: 8,
+                dscArea: "Results & Official Protocol",
+                dsc: "Official Protocol: Manage the official results data for the Closing Ceremony. Oversee the MoE and participation certificates. Ensure correct protocol for the \"Best of Nation\" and \"Jos de Goey\" awards.",
+                dscTasks: [],
+                dooArea: "Ceremonies & Social Events",
+                doo: "Coordinate logistics for the \"Farewell Party\" and other social receptions.",
+                dooTasks: []
+            },
+            {
+                id: 9,
+                dscArea: "Independent Test Project Developers (ITPD)",
+                dsc: "Oversee the programme of recruitment and engagement of organisations and individuals that assigned to the skills as ITPD. Assist the ITPD Project Manager on any delivery and quality challenges that might occur leading up to and including the EuroSkills Competition.",
+                dscTasks: [],
+                dooArea: "System Management",
+                doo: "Oversee all IT systems needed for WorldSkills Europe to operate effectively. Be the main liaison with WSI on systems that they own but WSE utilises. Be the organisation's administrator for Dropbox. At the EuroSkills competition ensure adequate WiFi stability and bandwidth to ensure competition systems such as tablet marking can be smoothly undertaken. Ensure network security.",
+                dooTasks: []
+            }
+        ];
+
+        let data = [];
+        let expandedRows = new Set();
+
+        // Icons
+        const icons = {
+            chevron: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>',
+            edit: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>',
+            trash: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>',
+            plus: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>'
+        };
+
+        function render() {
+            const container = document.getElementById('responsibilities-table');
+            container.innerHTML = data.map(row => `
+                <div class="row" data-id="${row.id}">
+                    <div class="row-main">
+                        <!-- DSC Area -->
+                        <div class="cell cell-dsc-area">
+                            <div id="dscArea-display-${row.id}">
+                                <div class="area-name">${escapeHtml(row.dscArea)}</div>
+                                <span class="edit-trigger" onclick="startInlineEdit('dscArea', ${row.id})">${icons.edit} Edit</span>
+                            </div>
+                            <div class="inline-edit" id="dscArea-edit-${row.id}">
+                                <input type="text" value="${escapeHtml(row.dscArea)}" id="dscArea-input-${row.id}">
+                                <div class="inline-edit-actions">
+                                    <button class="save-btn" onclick="saveInlineEdit('dscArea', ${row.id})">Save</button>
+                                    <button class="cancel-btn" onclick="cancelInlineEdit('dscArea', ${row.id})">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- DSC Responsibility -->
+                        <div class="cell cell-dsc">
+                            <div id="dsc-display-${row.id}">
+                                <div class="responsibility-text">${escapeHtml(row.dsc)}</div>
+                                <span class="edit-trigger" onclick="startInlineEdit('dsc', ${row.id})">${icons.edit} Edit</span>
+                            </div>
+                            <div class="inline-edit" id="dsc-edit-${row.id}">
+                                <textarea id="dsc-input-${row.id}">${escapeHtml(row.dsc)}</textarea>
+                                <div class="inline-edit-actions">
+                                    <button class="save-btn" onclick="saveInlineEdit('dsc', ${row.id})">Save</button>
+                                    <button class="cancel-btn" onclick="cancelInlineEdit('dsc', ${row.id})">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- DOO Area -->
+                        <div class="cell cell-doo-area">
+                            <div id="dooArea-display-${row.id}">
+                                <div class="area-name">${escapeHtml(row.dooArea)}</div>
+                                <span class="edit-trigger" onclick="startInlineEdit('dooArea', ${row.id})">${icons.edit} Edit</span>
+                            </div>
+                            <div class="inline-edit" id="dooArea-edit-${row.id}">
+                                <input type="text" value="${escapeHtml(row.dooArea)}" id="dooArea-input-${row.id}">
+                                <div class="inline-edit-actions">
+                                    <button class="save-btn" onclick="saveInlineEdit('dooArea', ${row.id})">Save</button>
+                                    <button class="cancel-btn" onclick="cancelInlineEdit('dooArea', ${row.id})">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- DOO Responsibility -->
+                        <div class="cell cell-doo">
+                            <div id="doo-display-${row.id}">
+                                <div class="responsibility-text">${escapeHtml(row.doo)}</div>
+                                <span class="edit-trigger" onclick="startInlineEdit('doo', ${row.id})">${icons.edit} Edit</span>
+                            </div>
+                            <div class="inline-edit" id="doo-edit-${row.id}">
+                                <textarea id="doo-input-${row.id}">${escapeHtml(row.doo)}</textarea>
+                                <div class="inline-edit-actions">
+                                    <button class="save-btn" onclick="saveInlineEdit('doo', ${row.id})">Save</button>
+                                    <button class="cancel-btn" onclick="cancelInlineEdit('doo', ${row.id})">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="cell cell-actions">
+                            <button class="action-btn expand ${expandedRows.has(row.id) ? 'expanded' : ''}" onclick="toggleExpand(${row.id})" title="Expand tasks" style="transform: ${expandedRows.has(row.id) ? 'rotate(90deg)' : 'none'}">
+                                ${icons.chevron}
+                            </button>
+                            <button class="action-btn delete" onclick="deleteRow(${row.id})" title="Delete row">
+                                ${icons.trash}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Tasks Section -->
+                    <div class="tasks-section ${expandedRows.has(row.id) ? 'visible' : ''}" id="tasks-${row.id}">
+                        <div class="tasks-label dsc">DSC Tasks</div>
+                        <div class="tasks-column">
+                            ${row.dscTasks.map((task, idx) => `
+                                <div class="task-item">
+                                    <span class="task-bullet dsc">•</span>
+                                    <span class="task-text">${escapeHtml(task)}</span>
+                                    <button class="task-delete" onclick="deleteTask(${row.id}, 'dsc', ${idx})">${icons.trash}</button>
+                                </div>
+                            `).join('')}
+                            <div class="add-task">
+                                <input type="text" id="new-dsc-task-${row.id}" placeholder="Add task..." onkeypress="handleTaskKeypress(event, ${row.id}, 'dsc')">
+                                <button class="add-task-btn dsc" onclick="addTask(${row.id}, 'dsc')">${icons.plus}</button>
+                            </div>
+                        </div>
+                        
+                        <div class="tasks-label doo">DOO Tasks</div>
+                        <div class="tasks-column">
+                            ${row.dooTasks.map((task, idx) => `
+                                <div class="task-item">
+                                    <span class="task-bullet doo">•</span>
+                                    <span class="task-text">${escapeHtml(task)}</span>
+                                    <button class="task-delete" onclick="deleteTask(${row.id}, 'doo', ${idx})">${icons.trash}</button>
+                                </div>
+                            `).join('')}
+                            <div class="add-task">
+                                <input type="text" id="new-doo-task-${row.id}" placeholder="Add task..." onkeypress="handleTaskKeypress(event, ${row.id}, 'doo')">
+                                <button class="add-task-btn doo" onclick="addTask(${row.id}, 'doo')">${icons.plus}</button>
+                            </div>
+                        </div>
+                        
+                        <div class="tasks-spacer"></div>
+                    </div>
+                </div>
+            `).join('');
+            
+            saveToLocalStorage();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function toggleExpand(id) {
+            if (expandedRows.has(id)) {
+                expandedRows.delete(id);
+            } else {
+                expandedRows.add(id);
+            }
+            render();
+        }
+
+        function startInlineEdit(field, id) {
+            document.getElementById(`${field}-display-${id}`).style.display = 'none';
+            document.getElementById(`${field}-edit-${id}`).classList.add('visible');
+            const input = document.getElementById(`${field}-input-${id}`);
+            input.focus();
+            if (input.tagName === 'TEXTAREA') {
+                input.setSelectionRange(input.value.length, input.value.length);
+            }
+        }
+
+        function cancelInlineEdit(field, id) {
+            document.getElementById(`${field}-display-${id}`).style.display = '';
+            document.getElementById(`${field}-edit-${id}`).classList.remove('visible');
+            const row = data.find(r => r.id === id);
+            document.getElementById(`${field}-input-${id}`).value = row[field];
+        }
+
+        function saveInlineEdit(field, id) {
+            const value = document.getElementById(`${field}-input-${id}`).value.trim();
+            data = data.map(row => {
+                if (row.id === id) {
+                    return { ...row, [field]: value };
+                }
+                return row;
+            });
+            render();
+            showSaveConfirmation();
+        }
+
+        function deleteRow(id) {
+            if (confirm('Delete this responsibility row?')) {
+                data = data.filter(row => row.id !== id);
+                expandedRows.delete(id);
+                render();
+                showSaveConfirmation();
+            }
+        }
+
+        function addTask(rowId, role) {
+            const input = document.getElementById(`new-${role}-task-${rowId}`);
+            const taskText = input.value.trim();
+            if (!taskText) return;
+            
+            data = data.map(row => {
+                if (row.id === rowId) {
+                    const taskKey = role === 'dsc' ? 'dscTasks' : 'dooTasks';
+                    return { ...row, [taskKey]: [...row[taskKey], taskText] };
+                }
+                return row;
+            });
+            
+            input.value = '';
+            expandedRows.add(rowId);
+            render();
+            showSaveConfirmation();
+            
+            // Refocus input
+            setTimeout(() => {
+                document.getElementById(`new-${role}-task-${rowId}`).focus();
+            }, 10);
+        }
+
+        function handleTaskKeypress(event, rowId, role) {
+            if (event.key === 'Enter') {
+                addTask(rowId, role);
+            }
+        }
+
+        function deleteTask(rowId, role, taskIndex) {
+            data = data.map(row => {
+                if (row.id === rowId) {
+                    const taskKey = role === 'dsc' ? 'dscTasks' : 'dooTasks';
+                    return { ...row, [taskKey]: row[taskKey].filter((_, i) => i !== taskIndex) };
+                }
+                return row;
+            });
+            expandedRows.add(rowId);
+            render();
+            showSaveConfirmation();
+        }
+
+        function openAddModal() {
+            document.getElementById('modal-title').textContent = 'Add New Responsibility Row';
+            document.getElementById('modal-save-btn').textContent = 'Add Row';
+            document.getElementById('dsc-area-input').value = '';
+            document.getElementById('dsc-input').value = '';
+            document.getElementById('doo-area-input').value = '';
+            document.getElementById('doo-input').value = '';
+            document.getElementById('modal').classList.add('visible');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('visible');
+        }
+
+        function saveRow() {
+            const dscArea = document.getElementById('dsc-area-input').value.trim();
+            const dsc = document.getElementById('dsc-input').value.trim();
+            const dooArea = document.getElementById('doo-area-input').value.trim();
+            const doo = document.getElementById('doo-input').value.trim();
+            
+            if (!dscArea && !dooArea) {
+                alert('Please enter at least one key area title');
+                return;
+            }
+            
+            const newId = Math.max(...data.map(d => d.id), 0) + 1;
+            data.push({
+                id: newId,
+                dscArea: dscArea || 'New Area',
+                dsc: dsc,
+                dooArea: dooArea || 'New Area',
+                doo: doo,
+                dscTasks: [],
+                dooTasks: []
+            });
+            
+            closeModal();
+            render();
+            showSaveConfirmation();
+        }
+
+        function showSaveConfirmation() {
+            const status = document.getElementById('save-status');
+            status.style.color = '#22c55e';
+            status.querySelector('span').textContent = 'Changes saved!';
+            setTimeout(() => {
+                status.querySelector('span').textContent = 'Changes saved automatically';
+            }, 2000);
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            
+            doc.setFontSize(16);
+            doc.setTextColor(30, 58, 95);
+            doc.text('WorldSkills Europe - Director Responsibilities Matrix', 14, 15);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text('Division of responsibilities between Director of Skills Competitions and Director of Operations', 14, 22);
+            
+            const tableData = data.map(row => {
+                let dscContent = row.dsc;
+                if (row.dscTasks.length > 0) {
+                    dscContent += '\n\nSpecific Tasks:\n' + row.dscTasks.map(t => '• ' + t).join('\n');
+                }
+                
+                let dooContent = row.doo;
+                if (row.dooTasks.length > 0) {
+                    dooContent += '\n\nSpecific Tasks:\n' + row.dooTasks.map(t => '• ' + t).join('\n');
+                }
+                
+                return [row.dscArea, dscContent, row.dooArea, dooContent];
+            });
+            
+            doc.autoTable({
+                startY: 28,
+                head: [[
+                    'DSC Key Area',
+                    'DSC Responsibility',
+                    'DOO Key Area',
+                    'DOO Responsibility'
+                ]],
+                body: tableData,
+                headStyles: {
+                    fillColor: [30, 58, 95],
+                    textColor: 255,
+                    fontSize: 8,
+                    fontStyle: 'bold',
+                    cellPadding: 3
+                },
+                columnStyles: {
+                    0: { cellWidth: 35, fontStyle: 'bold', fillColor: [239, 246, 255], textColor: [30, 64, 175] },
+                    1: { cellWidth: 95 },
+                    2: { cellWidth: 35, fontStyle: 'bold', fillColor: [236, 253, 245], textColor: [6, 95, 70] },
+                    3: { cellWidth: 95 }
+                },
+                bodyStyles: {
+                    fontSize: 7,
+                    cellPadding: 3,
+                    lineColor: [220, 220, 220],
+                    lineWidth: 0.1
+                },
+                alternateRowStyles: {
+                    fillColor: [252, 252, 253]
+                },
+                margin: { left: 14, right: 14 },
+                didParseCell: function(hookData) {
+                    if (hookData.section === 'body') {
+                        if (hookData.column.index === 0) {
+                            hookData.cell.styles.fillColor = [239, 246, 255];
+                            hookData.cell.styles.textColor = [30, 64, 175];
+                        }
+                        if (hookData.column.index === 2) {
+                            hookData.cell.styles.fillColor = [236, 253, 245];
+                            hookData.cell.styles.textColor = [6, 95, 70];
+                        }
+                    }
+                }
+            });
+            
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text(
+                    `Generated on ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} | Page ${i} of ${pageCount}`,
+                    doc.internal.pageSize.width / 2,
+                    doc.internal.pageSize.height - 10,
+                    { align: 'center' }
+                );
+            }
+            
+            doc.save('WSE_Director_Responsibilities.pdf');
+        }
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch (e) {
+                console.error('Failed to save to localStorage:', e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        data = parsed;
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load from localStorage:', e);
+            }
+            return false;
+        }
+
+        function resetToDefault() {
+            if (confirm('Reset all data to the original default values? This cannot be undone.')) {
+                data = JSON.parse(JSON.stringify(defaultData));
+                expandedRows.clear();
+                render();
+                showSaveConfirmation();
+            }
+        }
+
+        function exportJSON() {
+            const exportData = {
+                version: 2,
+                exportDate: new Date().toISOString(),
+                data: data
+            };
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `WSE_Responsibilities_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    
+                    // Handle both wrapped format and raw array
+                    let importedData;
+                    if (imported.data && Array.isArray(imported.data)) {
+                        importedData = imported.data;
+                    } else if (Array.isArray(imported)) {
+                        importedData = imported;
+                    } else {
+                        throw new Error('Invalid format');
+                    }
+                    
+                    // Validate structure
+                    if (importedData.length === 0) {
+                        throw new Error('No data found');
+                    }
+                    
+                    const requiredFields = ['id', 'dscArea', 'dsc', 'dooArea', 'doo'];
+                    const firstRow = importedData[0];
+                    const missingFields = requiredFields.filter(f => !(f in firstRow));
+                    if (missingFields.length > 0) {
+                        throw new Error(`Missing fields: ${missingFields.join(', ')}`);
+                    }
+                    
+                    // Ensure tasks arrays exist
+                    importedData = importedData.map(row => ({
+                        ...row,
+                        dscTasks: row.dscTasks || [],
+                        dooTasks: row.dooTasks || []
+                    }));
+                    
+                    if (confirm(`Import ${importedData.length} responsibility rows? This will replace your current data.`)) {
+                        data = importedData;
+                        expandedRows.clear();
+                        render();
+                        showSaveConfirmation();
+                        alert('Data imported successfully!');
+                    }
+                } catch (err) {
+                    alert('Failed to import: ' + err.message + '\n\nMake sure you selected a valid WSE Responsibilities JSON file.');
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset input so same file can be selected again
+            event.target.value = '';
+        }
+
+        // Close modal on outside click
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // Initialize
+        if (!loadFromLocalStorage()) {
+            data = JSON.parse(JSON.stringify(defaultData));
+        }
+        render();
+    </script>
+</body>
+</html>
